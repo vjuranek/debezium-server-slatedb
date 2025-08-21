@@ -14,5 +14,7 @@ public interface SlateDb {
 
     void insert(String key, String value);
 
+    String get(String key);
+
     void close();
 }

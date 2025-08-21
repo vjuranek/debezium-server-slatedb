@@ -53,6 +53,7 @@ public class SlateDbChangeConsumer extends BaseChangeConsumer implements Debeziu
         try {
             db = LibraryLoader.create(SlateDb.class).load(dylib);
             db.init(destination);
+            LOGGER.warn("SlateDB initialized");
         }
         catch (Exception e) {
             LOGGER.warn("Failed to initialize SlateDB", e);
@@ -76,6 +77,7 @@ public class SlateDbChangeConsumer extends BaseChangeConsumer implements Debeziu
             LOGGER.trace("Received event '{}'", record);
             if (record.value() != null) {
                 // TODO serialize to bytes and store bytes
+                // System.out.println("!!!inserting key " + record.key().toString() + " -> " + record.value().toString());
                 db.insert(record.key().toString(), record.value().toString());
                 committer.markProcessed(record);
             }
