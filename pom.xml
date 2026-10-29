@@ -4,29 +4,18 @@
     <parent>
         <groupId>io.debezium</groupId>
         <artifactId>debezium-server</artifactId>
-        <version>3.3.0-SNAPSHOT</version>
+        <version>3.7.0.Final</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.debezium.server.slatedb</groupId>
     <artifactId>debezium-server-slatedb</artifactId>
-    <name>debezium-server-slatedb</name>
+    <name>Debezium Server SlateDB Sink Adapter</name>
     <packaging>jar</packaging>
 
     <properties>
-        <version.debezium>3.3.0-SNAPSHOT</version.debezium>
-        <version.jnr>2.2.17</version.jnr>
+        <version.slatedb>0.17.0</version.slatedb>
     </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.github.jnr</groupId>
-                <artifactId>jnr-ffi</artifactId>
-                <version>${version.jnr}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -34,9 +23,34 @@
             <artifactId>debezium-server-core</artifactId>
         </dependency>
 
+        <!-- Official SlateDB Java client (UniFFI bindings, bundles the native library) -->
         <dependency>
-            <groupId>com.github.jnr</groupId>
-            <artifactId>jnr-ffi</artifactId>
+            <groupId>io.slatedb</groupId>
+            <artifactId>slatedb-uniffi</artifactId>
+            <version>${version.slatedb}</version>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-server-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
@@ -67,6 +81,14 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- SlateDB loads a bundled native library through JNA -->
+                    <argLine>${mockito.argLine} --enable-native-access=ALL-UNNAMED</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <executions>
                     <execution>
@@ -88,6 +110,7 @@
                     <systemProperties>
                         <test.type>IT</test.type>
                     </systemProperties>
+                    <argLine>${mockito.argLine} --enable-native-access=ALL-UNNAMED</argLine>
                     <runOrder>${runOrder}</runOrder>
                 </configuration>
             </plugin>
