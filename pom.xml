@@ -59,6 +59,7 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${quarkus.version.runtime}</version>
+		<extensions>true</extensions>
                 <executions>
                     <execution>
                         <goals>
