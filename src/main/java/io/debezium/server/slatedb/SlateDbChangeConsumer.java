@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Instance;
@@ -20,6 +21,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,19 @@ public class SlateDbChangeConsumer extends BaseChangeConsumer implements Debeziu
 
     private static final String PROP_PREFIX = "debezium.sink.slatedb.";
 
+    static {
+        // Make the bundled native library resolvable as early as possible: this class is the only one that
+        // references the io.slatedb.uniffi types, so running the extraction during its initialization guarantees
+        // the 'uniffi.component.slatedb.libraryOverride' system property is set before any SlateDB class is loaded.
+        // Any failure here is reported with full context later from configure().
+        try {
+            SlateDbNativeLibrary.ensureLoaded();
+        }
+        catch (RuntimeException e) {
+            LOGGER.debug("Eager SlateDB native library initialization failed, will retry during configure()", e);
+        }
+    }
+
     private final ComponentMetadataFactory componentMetadataFactory = new ComponentMetadataFactory();
 
     private SlateDbChangeConsumerConfig config;
@@ -66,6 +81,24 @@ public class SlateDbChangeConsumer extends BaseChangeConsumer implements Debeziu
     @Inject
     @CustomConsumerBuilder
     Instance<Db> customDb;
+
+    /**
+     * Initializes the sink. Debezium Server drives sink initialization through CDI's {@code @PostConstruct}
+     * (as done by the other sinks), not through {@link DebeziumServerSink#configure(Config)}, so the actual work
+     * is triggered from here using the global MicroProfile configuration.
+     */
+    @PostConstruct
+    void connect() {
+        try {
+            configure(ConfigProvider.getConfig());
+        }
+        catch (DebeziumException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new DebeziumException("Failed to initialize the SlateDB sink", e);
+        }
+    }
 
     @Override
     public void configure(Config mpConfig) throws Exception {
